@@ -1,0 +1,196 @@
+---
+title: "Data setup and test document for Capstone Project"
+output: html_notebook
+---
+
+```{r Loading libraries}
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(maps)
+```
+
+```{r Cleaning source data}
+prem_table_13_14 <- Premier_League_Final_Table_13_14[-c(1), -c(1,3:17)]
+prem_table_14_15 <- Premier_League_Final_Table_14_15[-c(1), -c(1,3:17)]
+prem_table_15_16 <- Premier_League_Final_Table_15_16[-c(1), -c(1,3:17)]
+prem_table_16_17 <- Premier_League_Final_Table_16_17[-c(1), -c(1,3:17)]
+prem_table_17_18 <- Premier_League_Final_Table_17_18[-c(1), -c(1,3:17)]
+prem_table_18_19 <- Premier_League_Final_Table_18_19[-c(1), -c(1,3:17)]
+prem_table_19_20 <- Premier_League_Final_Table_19_20[-c(1), -c(1,3:17)]
+prem_table_20_21 <- Premier_League_Final_Table_20_21[-c(1), -c(1,3:17)]
+prem_table_21_22 <- Premier_League_Final_Table_21_22[-c(1), -c(1,3:17)]
+prem_table_22_23 <- Premier_League_Final_Table_22_23[-c(1), -c(1,3:17)]
+```
+
+```{r Creating a cleaning a combined table}
+prem_table_13_23 <- bind_rows(prem_table_13_14, prem_table_14_15, prem_table_15_16, prem_table_16_17, prem_table_17_18, prem_table_18_19, prem_table_19_20, prem_table_20_21, prem_table_21_22, prem_table_22_23)
+prem_table_13_23 <- prem_table_13_23 %>%
+  rename(Team = ...1,
+    Pts = ...2) %>%
+  transform(Pts = as.numeric(Pts))
+```
+
+```{r Sorting combined table}
+prem_table_13_23 <- prem_table_13_23 %>%
+  group_by(Team) %>%
+  summarise(Total_Pts = sum(Pts)) %>%
+  arrange(desc(Total_Pts))
+```
+
+```{r Saving 10 year Prem table}
+write.csv(prem_table_13_23, "prem_table_13_23.csv")
+```
+
+```{r Creating deloitte money league df}
+deloitte_money_league <- data.frame(
+  Season = c("13_14", "14_15", "15_16", "16_17", "17_18", "18_19", "19_20", "20-21", "21_22", "22_23"),
+  End_of_Season = c("31052014", "31052015", "31052016", "31052017", "31052018", "31052019", "31052020", "31052021", "31052022", "31052023"),
+  Manchester_City = c(416.5, 463.5, 524.9, 527.7, 568.4, 610.6, 549.2, 644.9, 731.0, 825.9),
+  Arsenal = c(359.3, 435.5, 468.5, 487.6, 439.2, 445.2, 388.0, 366.5, 433.5, 532.6),
+  Liverpool = c(305.9, 391.8, 403.8, 424.2, 513.7, 604.7, 558.6, 550.4, 701.7, 682.9),
+  Chelsea = c(387.9, 420.0, 447.4, 428.0, 505.7, 513.1, 469.7, 493.1, 568.3, 589.4)
+)
+```
+
+```{r Creating transfer expenditure df}
+transfer_spend <- data.frame(
+  Season = c("13_14", "14_15", "15_16", "16_17", "17_18", "18_19", "19_20", "20-21", "21_22", "22_23"),
+  End_of_Season = c("31052014", "31052015", "31052016", "31052017", "31052018", "31052019", "31052020", "31052021", "31052022", "31052023"),
+  Manchester_City = c(115.50, 102.8, 208.47, 216.25, 317.5, 78.59, 169.82, 173.4, 138.9, 155),
+  Arsenal = c(49.25, 118.98, 26.5, 113, 152.85, 80.15, 160.8, 86, 167.4, 186.4),
+  Liverpool = c(58.1, 151.43, 126.5, 79.9, 173.65, 182.2, 10.4, 84.05, 87, 142.3),
+  Chelsea = c(130.35, 137.70, 96.5, 132.8, 260.5, 208.8, 45, 247.2, 118, 611.49)
+)
+```
+
+```{r Cleaning deloitte money league}
+clean_money_league <- deloitte_money_league %>%
+  gather("Manchester_City", "Arsenal", "Liverpool", "Chelsea", key="Team",value="Value")  %>%
+  mutate(Team = gsub("_"," ",Team))
+```
+
+```{r Saving clean deloitte money league}
+write.csv(clean_money_league, "clean_money_league.csv")
+```
+
+```{r Cleaning transfer expenditure}
+clean_transfer_spend <- transfer_spend %>%
+  gather("Manchester_City", "Arsenal", "Liverpool", "Chelsea", key="Team",value="Value")  %>%
+  mutate(Team = gsub("_"," ",Team))
+```
+
+```{r Saving clean transfer expenditure}
+write.csv(clean_transfer_spend, "clean_transfer_spend.csv")
+```
+
+```{r Combining google trend data}
+trend_data <- multiTimeline %>%
+  separate(`Category: All categories`, c("Month", "Liverpool", "Manchester_City", "Arsenal", "Chelsea"), ",")
+trend_data <- trend_data[c(-1), ] %>%
+  transform(Liverpool=as.numeric(Liverpool), Manchester_City=as.numeric(Manchester_City), Arsenal=as.numeric(Arsenal), Chelsea=as.numeric(Chelsea))
+```
+
+```{r Saving combined google trend data}
+write.csv(trend_data, "trend_data.csv")
+```
+
+```{r Cleaning combined google trend data}
+clean_trend_data <- trend_data %>%
+  gather("Liverpool", "Manchester_City", "Arsenal", "Chelsea", key="Team",value="Hits") %>%
+  mutate(Team = gsub("_"," ",Team))
+```
+
+```{r Saving clean combined google trend data}
+write.csv(clean_trend_data, "clean_trend_data.csv")
+```
+
+```{r Cleaning google geo trend data}
+afc_geo <- afc_geo_map %>%
+  separate(`Category: All categories`,c("state","Arsenal"),",")
+afc_geo <- afc_geo[c(-1), ] %>%
+  mutate(Arsenal = gsub("<1"," ",Arsenal))
+afc_geo <- afc_geo %>%
+  transform(Arsenal=as.numeric(Arsenal)) %>%
+  replace_na(list(Arsenal = 0))
+cfc_geo <- cfc_geo_map %>%
+  separate(`Category: All categories`,c("state","Chelsea"),",")
+cfc_geo <- cfc_geo[c(-1), ] %>%
+  mutate(Chelsea = gsub("<1"," ",Chelsea))
+cfc_geo <- cfc_geo %>%
+  transform(Chelsea=as.numeric(Chelsea)) %>%
+  replace_na(list(Chelsea = 0))
+lfc_geo <- lfc_geo_map %>%
+  separate(`Category: All categories`,c("state","Liverpool"),",")
+lfc_geo <- lfc_geo[c(-1), ] %>%
+  mutate(Liverpool = gsub("<1"," ",Liverpool))
+lfc_geo <- lfc_geo %>%
+  transform(Liverpool=as.numeric(Liverpool)) %>%
+  replace_na(list(Liverpool = 0))
+mcfc_geo <- mcfc_geo_map %>%
+  separate(`Category: All categories`,c("state","Manchester_City"),",")
+mcfc_geo <- mcfc_geo[c(-1), ] %>%
+  mutate(Manchester_City = gsub("<1"," ",Manchester_City))
+mcfc_geo <- mcfc_geo %>%
+  transform(Manchester_City=as.numeric(Manchester_City)) %>%
+  replace_na(list(Manchester_City = 0))
+```
+
+```{r Combining google geo trend data}
+geo_data <- bind_cols(afc_geo, cfc_geo, lfc_geo, mcfc_geo)
+geo_data <- geo_data[c(-3,-5,-7)]
+geo_data <- geo_data %>% rename(state = state...1)
+```
+
+```{r Saving combined google geo trend data}
+write.csv(geo_data, "geo_data.csv")
+```
+
+```{r Cleaning combined google geo trend data}
+clean_geo_data <- geo_data %>%
+  gather("Arsenal", "Chelsea", "Liverpool", "Manchester_City", key="Team",value="Hits") %>%
+  mutate(Team = gsub("_"," ",Team)) %>%
+  mutate(state = tolower(state))
+```
+
+```{r Saving clean combined google geo trend data}
+write.csv(clean_geo_data, "clean_geo_data.csv")
+```
+
+```{r Creating United States map data}
+states_map <- map_data("state")
+```
+
+```{r Adding month to clean deloitte money league to assist analysis}
+clean_transfer_spend_month <- clean_transfer_spend %>%
+  arrange(Season)
+clean_transfer_spend_month$month <- c("2014-6", "2014-6", "2014-6", "2014-6", "2015-6", "2015-6", "2015-6", "2015-6", "2016-6", "2016-6", "2016-6", "2016-6", "2017-6", "2017-6", "2017-6", "2017-6", "2018-6", "2018-6", "2018-6", "2018-6", "2019-6", "2019-6", "2019-6", "2019-6", "2020-6", "2020-6", "2020-6", "2020-6", "2021-6", "2021-6", "2021-6", "2021-6", "2022-6", "2022-6", "2022-6", "2022-6", "2023-6", "2023-6", "2023-6", "2023-6")
+```
+
+```{r Saving clean deloitte money league with added month}
+write.csv(clean_transfer_spend_month, "clean_transfer_spend_month.csv")
+```
+
+```{r Date formatting end of season column}
+deloitte_money_league$End_of_Season <-
+  as.Date(deloitte_money_league$End_of_Season, format = "%d%m%Y")
+transfer_spend$End_of_Season <-
+  as.Date(transfer_spend$End_of_Season, format = "%d%m%Y")
+```
+
+```{r Saving deloitte money league and transfer expenditure}
+write.csv(deloitte_money_league, "deloitte_money_league.csv")
+write.csv(transfer_spend, "transfer_spend.csv")
+```
+
+```{r Combining deloitte money league and transfer expenditure}
+money_transfer_combined <- bind_cols(deloitte_money_league, transfer_spend)
+money_transfer_combined <- money_transfer_combined[c(-7,-8)]
+money_transfer_combined <- money_transfer_combined %>%
+  rename(Season = Season...1, End_of_Season = End_of_Season...2, Manchester_City_dml = Manchester_City...3, Arsenal_dml = Arsenal...4, Liverpool_dml = Liverpool...5, Chelsea_dml = Chelsea...6, Manchester_City_ts = Manchester_City...9, Arsenal_ts = Arsenal...10, Liverpool_ts = Liverpool...11, Chelsea_ts = Chelsea...12)
+```
+
+```{r Saving combined deloitte money league and transfer expenditure}
+write.csv(money_transfer_combined, "money_transfer_combined.csv")
+```

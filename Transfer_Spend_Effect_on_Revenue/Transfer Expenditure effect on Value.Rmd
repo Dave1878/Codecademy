@@ -1,0 +1,160 @@
+---
+title: "The Effect of Transfer Expenditure of Premier League Football Team Valuation"
+output: html_notebook
+---
+
+### Introduction
+The purpose of this project was to investigate the effect of transfer expenditure by four Premier League football clubs on their value, as assessed by Deloitte. The Deloitte 'money league' looks at a clubs revenue, gate receipts, shirt sales, TV income, etc, and calculates a value for each club. These figures are published annually. Transfer income and expenditure are not applicable to these values; therefore it is of interest to see if transfer expenditure had a noticeable effect on the value and popularity of these teams.
+
+To investigate this it was decided that the four clubs with the most points over the past 10 season's of the Premier League should be investigated. This decision was taken to limit the scope of the investigation.
+
+### Data
+To carry out this investigation data was collected from multiple sources. Premier League final tables were obtained from footballwebpages.co.uk, Deloitte's published 'money table' via Wikipedia, transfer expenditure from transfermarkt.co.uk and Google Trend data was sourced from Google.
+
+The table below shows the four clubs that have collected the most points over the past 10 seasons.
+```{r Selection of football teams for analysis}
+head(prem_table_13_23, 4)
+```
+
+The graph below shows the calculated value of each club per season.
+```{r Creating deloitte money league line graph}
+clean_money_league %>% ggplot(aes(x = Season, y= Value, colour = Team, group = Team)) + 
+  geom_line() +
+  geom_point() +
+  scale_colour_discrete(name = "Football Club", labels = c("Arsenal FC", "Chelsea FC", "Liverpool FC", "Manchester City FC")) +
+  labs(title = "Deloitte Money League Value of Premier League Football Clubs", y = "Value (€) (in Millions)") +
+  theme(axis.text.x = element_text(angle = 20))
+```
+
+The graph below shows the transfer expenditure of each club per season.
+```{r Creating transfer expenditure line graph}
+clean_transfer_spend %>% ggplot(aes(x = Season, y= Value, colour = Team, group = Team)) + 
+  geom_line() +
+  geom_point() +
+  scale_colour_discrete(name = "Football Club", labels = c("Arsenal FC", "Chelsea FC", "Liverpool FC", "Manchester City FC")) +
+  labs(title = "Transfer Expenditure by Premier League Football Clubs", y = "Value (€) (in Millions)") +
+  theme(axis.text.x = element_text(angle = 20))
+```
+
+### Google Trend Data
+Due to the gtrendsR being unable to return results, Google Trend data was downloaded by trend searching the clubs via Google. Using this data, I visualised the relative popularity of the clubs.
+```{r Creating google trend data line graph}
+clean_trend_data %>% ggplot(aes(x = Month, y= Hits, colour = Team, group = Team)) + 
+  geom_line(alpha=0.5) +
+  scale_colour_discrete(name = "Football Club", labels = c("Arsenal FC", "Chelsea FC", "Liverpool FC", "Manchester City FC")) +
+  labs(title = "Google Trend Data for Premier League Football Clubs", y = "Hits (Normalised to be between 0 and 100)") +
+  scale_x_discrete(breaks = c("2013-08", "2016-08", "2019-08", "2022-08")) +
+  theme(axis.text.x = element_text(angle = 20))
+```
+
+### Analysis of the Trend Data
+The aim of the analysis of the trend data was to compare this data to the transfer expenditure of the club, but before that I wanted to look at the data for a football market which is growing in popularity, the United States. To do this the trend data was filtered to only contain trend data for the United States at state level. I also used the maps library to help create maps of the United States. 
+```{r Creating heatmap of United States}
+clean_geo_data %>% ggplot(aes(map_id = state)) +
+  geom_map(aes(fill = Hits), map = states_map) +
+  expand_limits(x = states_map$long, y = states_map$lat) +
+  facet_wrap(~ Team, nrow = 2) +
+  labs(title = "Google Trend Data For Premier League Football Teams by State") + 
+  scale_fill_continuous(name = "Hits (Scaled to 100)") +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()
+)
+```
+
+As you can see from the heatmap there appear to be football hotspots where all the clubs are popular, although Liverpool and Manchester City appear to be more popular across a wider range of states than Arsenal and Chelsea. This visualisation could be used by football clubs to target areas for increased advertising or maybe a tour of those states to boost popularity.
+
+### Analysing Trend Data with Transfer Expenditure
+Using the Google Trend data, with the transfer expenditure of each club. I have plotted each clubs expenditure, along with their respective popularity. Please note a nominal month per season (representing the end of that season), was added to the expenditure data to assist in drawing the graph.
+```{r Creating graph of trend data against expenditure for Arsenal}
+ggplot() +
+  geom_line(filter(clean_transfer_spend_month, Team == "Arsenal"), mapping = aes(x = month, y = Value, colour = "Expenditure", group = Team)) +
+  geom_point(filter(clean_transfer_spend_month, Team == "Arsenal"), mapping = aes(x = month, y = Value, colour = "Expenditure", group = Team)) +
+  geom_line(filter(clean_trend_data, Team == "Arsenal"), mapping = aes(x = Month, y = Hits*4, colour = "Trends Hits", group = Team)) +
+  scale_y_continuous(name = "Expenditure (€) (in Millions)", limits = c(0, 200), sec.axis = sec_axis(~./4, name="Google Trends Hits")) +
+  scale_x_discrete(name="Month", breaks=c("2013-06", "2016-06", "2019-06", "2022-06")) +
+  theme(axis.text.x = element_text(angle = 20)) +
+  labs(title = "Arsenal FC: Transfer Expenditure and Google Trend Data")
+```
+
+```{r Creating graph of trend data against expenditure for Chelsea}
+ggplot() +
+  geom_line(filter(clean_transfer_spend_month, Team == "Chelsea"), mapping = aes(x = month, y= Value, colour = "Expenditure", group = Team)) +
+  geom_point(filter(clean_transfer_spend_month, Team == "Chelsea"), mapping = aes(x = month, y = Value, colour = "Expenditure", group = Team)) +
+  geom_line(filter(clean_trend_data, Team == "Chelsea"), mapping = aes(x = Month, y = Hits*12.5, colour = "Trends Hits", group = Team)) +
+  scale_y_continuous(name = "Expenditure (€) (in Millions)", limits = c(0, 650), sec.axis = sec_axis(~./12.5, name="Google Trends Hits")) +
+  scale_x_discrete(name="Month", breaks = c("2013-06", "2016-06", "2019-06", "2022-06")) +
+  theme(axis.text.x = element_text(angle = 20)) +
+  labs(title = "Chelsea FC: Transfer Expenditure and Google Trend Data")
+```
+
+```{r Creating graph of trend data against expenditure for Liverpool}
+ggplot() +
+  geom_line(filter(clean_transfer_spend_month, Team == "Liverpool"), mapping = aes(x = month, y= Value, colour = "Expenditure", group = Team)) +
+  geom_point(filter(clean_transfer_spend_month, Team == "Liverpool"), mapping = aes(x = month, y = Value, colour = "Expenditure", group = Team)) +
+  geom_line(filter(clean_trend_data, Team == "Liverpool"), mapping = aes(x = Month, y = Hits*2, colour = "Trends Hits", group = Team)) +
+  scale_y_continuous(name = "Expenditure (€) (in Millions)", limits = c(0, 200), sec.axis = sec_axis(~./2, name="Google Trends Hits")) +
+  scale_x_discrete(breaks = c("2013-06", "2016-06", "2019-06", "2022-06")) +
+  theme(axis.text.x = element_text(angle = 20)) +
+  labs(title = "Liverpool FC: Transfer Expenditure and Google Trend Data")
+```
+
+```{r Creating graph of trend data against expenditure for Manchester City}
+ggplot() +
+  geom_line(filter(clean_transfer_spend_month, Team == "Manchester City"), mapping = aes(x = month, y= Value, colour = "Expenditure", group = Team)) +
+  geom_point(filter(clean_transfer_spend_month, Team == "Manchester City"), mapping = aes(x = month, y = Value, colour = "Expenditure", group = Team)) +
+  geom_line(filter(clean_trend_data, Team == "Manchester City"), mapping = aes(x = Month, y = Hits*4, colour = "Trends Hits", group = Team)) +
+  scale_y_continuous(name = "Expenditure (€) (in Millions)", limits = c(0, 400), sec.axis = sec_axis(~./4, name="Google Trends Hits")) +
+  scale_x_discrete(name="Month", breaks = c("2013-08", "2016-08", "2019-08", "2022-08")) +
+  theme(axis.text.x = element_text(angle = 20)) +
+  labs(title = "Manchester City FC: Transfer Expenditure and Google Trend Data")
+```
+
+Looking at these lines graphs it does not appear that the amount of money spent has any effect on the popularity of the football club. There is a period for Liverpool around 2019 where their popularity increases along with the amount of money being spent and also with Chelsea seeing their highest popularity rating around the time they were spending their biggest outlay. As the popularity of these clubs rises and falls quickly, on a consistent basis it is more likely games, successes and individual signings impact popularity to a much greater degree.
+
+### Checking for Linear Regression
+The final piece of analysis and probably the most important to conduct, was to see if there was any correlation between transfer expenditure by a club and an increase or fall in the club's valuation. Will spending a lot of money increase the value of the club?
+
+I created plots of transfer expenditure on the x axis and valuation on the y axis. I also added a LOESS smoother to visualise the regression line.
+```{r Creating Linear Regression graph Manchester City}
+money_transfer_combined %>% ggplot(aes(x = Manchester_City_ts, y = Manchester_City_dml)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  geom_smooth(se = FALSE, colour = "red") + 
+  labs(title = "Manchester City FC: Value vs Transfer Expenditure", x = "Transfer Expenditure (€) (in Millions)", y = "Value (€) (in Millions)")
+```
+
+```{r Creating Linear Regression graph Arsenal}
+money_transfer_combined %>% ggplot(aes(x = Arsenal_ts, y = Arsenal_dml)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  geom_smooth(se = FALSE, colour = "red") + 
+  labs(title = "Arsenal FC: Value vs Transfer Expenditure", x = "Transfer Expenditure (€) (in Millions)", y = "Value (€) (in Millions)")
+```
+
+```{r Creating Linear Regression graph Liverpool}
+money_transfer_combined %>% ggplot(aes(x = Liverpool_ts, y = Liverpool_dml)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  geom_smooth(se = FALSE, colour = "red") + 
+  labs(title = "Liverpool FC: Value vs Transfer Expenditure", x = "Transfer Expenditure (€) (in Millions)", y = "Value (€) (in Millions)")
+```
+
+```{r Creating Linear Regression graph Chelsea}
+money_transfer_combined %>% ggplot(aes(x = Chelsea_ts, y = Chelsea_dml)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  geom_smooth(se = FALSE, colour = "red") + 
+  labs(title = "Chelsea FC: Value vs Transfer Expenditure", x = "Transfer Expenditure (€) (in Millions)", y = "Value (€) (in Millions)")
+```
+
+As was pretty much evident with transfer expenditure and popularity the relationship between transfer expenditure and value does not look linear for any club. This is unsurprising as there are so many factors which influence an increase in value. Performances on the pitch and high profile players (which may not necessarily be the most expensive signings), to name a couple. Perhaps a multiple linear regression model or a model that considers more factors would be more effective at predicting value.
+
+### Conclusion and Further Steps
+Within this project I was able to compare the value of a football club against transfer expenditure. Generally, how much a club can spend depends on the size (value) of a club, but would the reverse, how much a club spends effect the value of a club. The answer to this question, from the analysis carried out in this project, appears to be no. Transfer expenditure alone seems to be too general a factor. The use of trend data highlighted this, as shown by the trend graphs. A club's popularity has many dips and troughs and rarely did the popularity rise in line with increased expenditure. However, the use of trend data to analyse popularity within the United States could be of use to clubs planning to increase popularity and conversely revenue from the US.
+
+To continue this analysis and see if transfers do have an effect on the value of a club, I would have to dig deeper into the transfers themselves. I could look at the number players signed, and, or individual signings and their effect on shirt/ticket sales. It is known that players such as David Beckham and Lionel Messi generated huge income in shirt sales. Were they unique or is this the norm for any club signing a 'big name' player. Additionally, within the trend data, there were related data sets with regard to individual players. Some analysis of this information could lead to insights about the popularity of a club, based on it's players.
+
+Finally, I could look at clubs who do not have the success that Manchester City, Liverpool, Arsenal and Chelsea achieve. Does a club which does not have regular success, increase their value by spending more?
